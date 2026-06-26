@@ -1,20 +1,64 @@
 import { useState, useEffect } from "react";
-import { fetchNotifications } from "../apis/notifications";
+import { fetchNotifications } from "../api/notifications";
+import { logFrontend } from "../middleware/logger";
 
-export function useNotifications() {
+const DEFAULT_LIMIT = 10;
+
+export function useNotifications({
+  filter = "All",
+  page = 1,
+  limit = DEFAULT_LIMIT,
+} = {}) {
   const [notifications, setNotifications] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   useEffect(() => {
+    let ignore = false;
+
     const load = async () => {
-      const data = await fetchNotifications();
-      setNotifications(data.notifications ?? []);
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await fetchNotifications({
+          limit,
+          page,
+          notificationType: filter,
+        });
+        const allNotifications = data.notifications ?? [];
+
+        if (!ignore) {
+          setNotifications(allNotifications);
+          setHasNextPage(allNotifications.length === limit);
+          await logFrontend(
+            "debug",
+            "utils",
+            `rendering page ${page} with filter ${filter} and ${allNotifications.length} returned notifications`,
+          );
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err.message || "Unable to load notifications");
+          await logFrontend(
+            "error",
+            "utils",
+            `unable to load notifications: ${err.message || "unknown error"}`,
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
     };
 
     load();
-  }, [notifications]);
+    return () => {
+      ignore = true;
+    };
+  }, [filter, limit, page]);
 
-  const totalPages = 0;
-
-  return { notifications, total, totalPages, loading: false, error: true };
+  return { notifications, hasNextPage, loading, error };
 }

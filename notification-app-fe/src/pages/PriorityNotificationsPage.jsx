@@ -1,8 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  Badge,
   Box,
-  Button,
   Divider,
   MenuItem,
   Paper,
@@ -10,20 +8,26 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import PriorityHighIcon from "@mui/icons-material/PriorityHigh";
 
 import { NotificationFilter } from "../components/NotificationFilter";
 import { NotificationList } from "../components/NotificationList";
 import { useNotifications } from "../hooks/useNotifications";
 import { useViewedNotifications } from "../hooks/useViewedNotifications";
 
-const pageSizeOptions = [5, 10, 15, 20];
+const priorityLimitOptions = [5, 10, 15];
 
-export function NotificationsPage() {
+function byNewest(left, right) {
+  return (
+    new Date(right.Timestamp.replace(" ", "T")) -
+    new Date(left.Timestamp.replace(" ", "T"))
+  );
+}
+
+export function PriorityNotificationsPage() {
   const [filter, setFilter] = useState("All");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(5);
   const viewed = useViewedNotifications();
 
   const { notifications, hasNextPage, loading, error } = useNotifications({
@@ -32,49 +36,35 @@ export function NotificationsPage() {
     limit,
   });
 
-  const newCount = notifications.filter((item) => !viewed.isViewed(item.ID)).length;
+  const priorityNotifications = useMemo(
+    () => [...notifications].sort(byNewest),
+    [notifications],
+  );
 
   return (
     <Box>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        alignItems={{ xs: "flex-start", sm: "center" }}
-        justifyContent="space-between"
-        spacing={2}
-        mb={3}
-      >
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Badge badgeContent={newCount} color="success" max={99}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2,
-                display: "grid",
-                placeItems: "center",
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-              }}
-            >
-              <NotificationsIcon sx={{ fontSize: 26 }} />
-            </Box>
-          </Badge>
-          <Box>
-            <Typography variant="h5" fontWeight={800}>
-              All Notifications
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Browse campus updates by type and page.
-            </Typography>
-          </Box>
-        </Stack>
-        <Button
-          variant="outlined"
-          startIcon={<RestartAltIcon />}
-          onClick={viewed.clearViewed}
+      <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: 2,
+            display: "grid",
+            placeItems: "center",
+            bgcolor: "secondary.main",
+            color: "secondary.contrastText",
+          }}
         >
-          Reset viewed
-        </Button>
+          <PriorityHighIcon sx={{ fontSize: 28 }} />
+        </Box>
+        <Box>
+          <Typography variant="h5" fontWeight={800}>
+            Priority Notifications
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Review the newest limited set first.
+          </Typography>
+        </Box>
       </Stack>
 
       <Divider sx={{ mb: 3 }} />
@@ -104,18 +94,18 @@ export function NotificationsPage() {
           />
           <TextField
             select
-            label="Per page"
+            label="Top notifications"
             size="small"
             value={limit}
             onChange={(event) => {
               setLimit(Number(event.target.value));
               setPage(1);
             }}
-            sx={{ minWidth: 140 }}
+            sx={{ minWidth: 190 }}
           >
-            {pageSizeOptions.map((option) => (
+            {priorityLimitOptions.map((option) => (
               <MenuItem key={option} value={option}>
-                {option}
+                Top {option}
               </MenuItem>
             ))}
           </TextField>
@@ -123,7 +113,7 @@ export function NotificationsPage() {
       </Paper>
 
       <NotificationList
-        notifications={notifications}
+        notifications={priorityNotifications}
         loading={loading}
         error={error}
         page={page}
