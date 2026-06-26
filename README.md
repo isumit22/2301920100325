@@ -18,14 +18,15 @@ A React campus notification dashboard for browsing, filtering, prioritizing, and
 ### All Notifications
 
 ![All Notifications](<./Screenshot (529).png>)
+![Paginated Notifications](<./Screenshot (527).png>)
 
 ### Priority Notifications
 
 ![Priority Notifications](<./Screenshot (528).png>)
 
-### Paginated Notifications
 
-![Paginated Notifications](<./Screenshot (527).png>)
+
+
 
 ## Repository Structure
 
